@@ -1,0 +1,35 @@
+{
+  "name": "frysker-mcp",
+  "version": "0.1.0",
+  "description": "MCP server exposing Frysker's Frisian language aids (word lookup, Dutch/Frisian translation, spell-check) as agent tools.",
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "frysker-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20.11"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "build:test": "tsc -p tsconfig.test.json",
+    "typecheck": "tsc -p tsconfig.test.json --noEmit",
+    "test": "npm run build:test && node --test \"dist-test/**/*.test.js\"",
+    "prepack": "npm run build",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "fast-xml-parser": "^5.11.2",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.3"
+  }
+}
