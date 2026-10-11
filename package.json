@@ -1,6 +1,6 @@
 {
   "name": "frysker-mcp",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "MCP server exposing Frysker's Frisian language aids (word lookup, Dutch/Frisian translation, spell-check) as agent tools.",
   "type": "module",
   "license": "MIT",
