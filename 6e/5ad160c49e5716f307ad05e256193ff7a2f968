@@ -1,0 +1,25 @@
+test/parser.test.ts
+  s_1ba23817c658e2::t_0453ff126585c5 11
+fixtures/check-response.xml
+  s_1ba23817c658e2::t_e6b2b87bb3708d 1
+fixtures/search-response.json
+  s_1ba23817c658e2::t_c152570810f1e9 1
+fixtures/translate-response.json
+  s_1ba23817c658e2::t_587580a119a8c1 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6e5ad160c49e5716f307ad05e256193ff7a2f968",
+  "prompts": {},
+  "sessions": {
+    "s_1ba23817c658e2": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ed4ccff09ffeaVcWUgxID19VZ2",
+        "model": "deepseek-v4.1-flash"
+      },
+      "human_author": "Anne Douwe Bouma <ad.bouma@247kooi.com>"
+    }
+  }
+}
