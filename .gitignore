@@ -5,3 +5,9 @@ dist-test/
 
 # Browser exploration output captured while reverse-engineering the APIs.
 .playwright-mcp/
+
+# Scratch notes and reverse-engineering output
+.scratch/
+check-response.xml
+search-response.json
+translate-response.json
