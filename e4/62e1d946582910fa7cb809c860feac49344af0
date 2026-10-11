@@ -1,0 +1,24 @@
+.github/workflows/publish.yml
+  s_a7d5e325a755d7::t_5af20a3f9212d1 1-32
+package.json
+  s_a7d5e325a755d7::t_908106bd00551f 10
+  s_a7d5e325a755d7::t_564b3ca2c0942d 19-39
+.github/workflows/ci.yml
+  s_a7d5e325a755d7::t_049399d98c047a 1-23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e462e1d946582910fa7cb809c860feac49344af0",
+  "prompts": {},
+  "sessions": {
+    "s_a7d5e325a755d7": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ed4d34be9ffeVYZ5CoOF6RHD9r",
+        "model": "deepseek-v4.1-flash"
+      },
+      "human_author": "Anne Douwe Bouma <ad.bouma@247kooi.com>"
+    }
+  }
+}
