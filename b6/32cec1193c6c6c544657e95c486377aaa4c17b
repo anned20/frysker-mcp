@@ -1,0 +1,19 @@
+README.md
+  s_c98232fc03f567::t_ea435e2f1c44ac 4-5,8,18-19,21-23,34-35,37-38,46-48,50,64,81,140-142
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b632cec1193c6c6c544657e95c486377aaa4c17b",
+  "prompts": {},
+  "sessions": {
+    "s_c98232fc03f567": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ed52c47d2ffeXGqnwoLzJTt1e2",
+        "model": "deepseek-v4.1-flash"
+      },
+      "human_author": "Anne Douwe Bouma <ad.bouma@247kooi.com>"
+    }
+  }
+}
