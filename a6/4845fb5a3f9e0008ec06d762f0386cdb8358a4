@@ -1,0 +1,14 @@
+.gitignore
+  h_1a6b0cc05bf029 8-13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a64845fb5a3f9e0008ec06d762f0386cdb8358a4",
+  "prompts": {},
+  "humans": {
+    "h_1a6b0cc05bf029": {
+      "author": "Anne Douwe Bouma <ad.bouma@247kooi.com>"
+    }
+  }
+}
