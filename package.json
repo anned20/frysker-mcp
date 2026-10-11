@@ -7,6 +7,7 @@
   "bin": {
     "frysker-mcp": "dist/index.js"
   },
+  "main": "dist/index.js",
   "files": [
     "dist",
     "README.md",
@@ -14,6 +15,27 @@
   ],
   "engines": {
     "node": ">=20.11"
+  },
+  "keywords": [
+    "mcp",
+    "modelcontextprotocol",
+    "frysker",
+    "frisian",
+    "translation",
+    "spellcheck"
+  ],
+  "author": "Anne Douwe Bouma",
+  "homepage": "https://github.com/anned20/frysker-mcp#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/anned20/frysker-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/anned20/frysker-mcp/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
