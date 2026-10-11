@@ -22,6 +22,7 @@ export interface WordDetail {
   inflections: Inflection[];
   synonyms: string[];
   variants: string[];
+  dutchisms: string[];
   translations: Translation[];
   definitions: string[];
 }

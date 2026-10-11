@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import { test } from "node:test";
+import { expect, test } from "vitest";
 
 import { loadConfig } from "../src/config.js";
 import { HttpGateway } from "../src/httpGateway.js";
@@ -10,7 +9,9 @@ const okTranslate = JSON.stringify({
   data: { translatetext: { translation: "It hûs.", translationlang: "nl" } },
 });
 
-function asFetch(fn: (url: string, init?: RequestInit) => Promise<Response>): FetchLike {
+function asFetch(
+  fn: (url: string, init?: RequestInit) => Promise<Response>,
+): FetchLike {
   return fn as unknown as FetchLike;
 }
 
@@ -22,8 +23,8 @@ test("retries once on a 5xx response, then succeeds", async () => {
     return new Response(okTranslate, { status: 200 });
   });
   const gateway = new HttpGateway({ config: loadConfig({}), fetchFn });
-  assert.equal(await gateway.translate("Het huis.", "nl"), "It hûs.");
-  assert.equal(calls, 2);
+  expect(await gateway.translate("Het huis.", "nl")).toBe("It hûs.");
+  expect(calls).toBe(2);
 });
 
 test("does not retry on a 4xx response", async () => {
@@ -33,8 +34,8 @@ test("does not retry on a 4xx response", async () => {
     return new Response("nope", { status: 400 });
   });
   const gateway = new HttpGateway({ config: loadConfig({}), fetchFn });
-  await assert.rejects(() => gateway.translate("Het huis.", "nl"), /HTTP 400/);
-  assert.equal(calls, 1);
+  await expect(gateway.translate("Het huis.", "nl")).rejects.toThrow(/HTTP 400/);
+  expect(calls).toBe(1);
 });
 
 test("retries a network error once and surfaces the failure", async () => {
@@ -44,11 +45,10 @@ test("retries a network error once and surfaces the failure", async () => {
     throw new Error("ECONNRESET");
   });
   const gateway = new HttpGateway({ config: loadConfig({}), fetchFn });
-  await assert.rejects(
-    () => gateway.translate("Het huis.", "nl"),
+  await expect(gateway.translate("Het huis.", "nl")).rejects.toThrow(
     /ECONNRESET/,
   );
-  assert.equal(calls, 2);
+  expect(calls).toBe(2);
 });
 
 test("surfaces GraphQL validation errors without retrying", async () => {
@@ -60,8 +60,8 @@ test("surfaces GraphQL validation errors without retrying", async () => {
     });
   });
   const gateway = new HttpGateway({ config: loadConfig({}), fetchFn });
-  await assert.rejects(() => gateway.translate("Het huis.", "nl"), /bad query/);
-  assert.equal(calls, 1);
+  await expect(gateway.translate("Het huis.", "nl")).rejects.toThrow(/bad query/);
+  expect(calls).toBe(1);
 });
 
 test("times out and reports an error instead of hanging", async () => {
@@ -75,7 +75,7 @@ test("times out and reports an error instead of hanging", async () => {
   );
   const config = loadConfig({ FRYSKER_TIMEOUT_MS: "20" });
   const gateway = new HttpGateway({ config, fetchFn });
-  await assert.rejects(() => gateway.translate("Het huis.", "nl"));
+  await expect(gateway.translate("Het huis.", "nl")).rejects.toThrow();
 });
 
 test("uses an overridden GraphQL endpoint", async () => {
@@ -87,7 +87,7 @@ test("uses an overridden GraphQL endpoint", async () => {
   const config = loadConfig({ FRYSKER_GRAPHQL_URL: "https://example.test/gql" });
   const gateway = new HttpGateway({ config, fetchFn });
   await gateway.translate("Het huis.", "nl");
-  assert.equal(seen, "https://example.test/gql");
+  expect(seen).toBe("https://example.test/gql");
 });
 
 test("posts the requested level and overridden credential to the checker", async () => {
@@ -109,7 +109,7 @@ test("posts the requested level and overridden credential to the checker", async
   });
   const gateway = new HttpGateway({ config, fetchFn });
   const result = await gateway.checkText("It hus.", "A2");
-  assert.deepEqual(result.issues, []);
-  assert.match(body, /<name>desired-level<\/name><content>A2<\/content>/);
-  assert.equal(authorization, "Basic abc");
+  expect(result.issues).toEqual([]);
+  expect(body).toMatch(/<name>desired-level<\/name><content>A2<\/content>/);
+  expect(authorization).toBe("Basic abc");
 });

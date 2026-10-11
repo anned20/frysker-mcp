@@ -6,6 +6,7 @@ import { postWithRetry } from "./http.js";
 import type {
   CheckIssue,
   CheckResult,
+  Inflection,
   IssueType,
   Level,
   SearchCandidate,
@@ -32,7 +33,24 @@ const LEMMASEARCH_QUERY = `query Search($term: String!, $lang: LangType!, $sourc
   }
 }`;
 
-const DETAILS_QUERY = `query Details($lemma: String!, $source: String!) {
+// TextType is T | Q | I | L, and Q/I may nest one level (Q holds T|I, I holds
+// T|Q), so select through both wrappers. L only occurs at the top level.
+const TEXT_SELECTION = `__typename
+            ... on T { textT }
+            ... on L { link { lemma } }
+            ... on Q { textQ { __typename ... on T { textT } ... on I { textI { __typename ... on T { textT } } } } }
+            ... on I { textI { __typename ... on T { textT } ... on Q { textQ { __typename ... on T { textT } } } } }`;
+
+const SUBFORM_SELECTION = `__typename
+        ... on FormInfo { linguistics description paradigms { form lang hyphenation pronunciation preferred } }
+        ... on Synonym { form lang meaning }
+        ... on Variant { form lang }
+        ... on Dutchism { form lang }`;
+
+// Sense-level subForms are a v9 addition; the public v8 endpoint rejects the
+// field, so the caller decides whether to include it.
+function buildDetailsQuery(includeSenseSubForms: boolean): string {
+  return `query Details($lemma: String!, $source: String!) {
   details(lemma: $lemma, source: $source, englishTranslations: true) {
     source
     lemma {
@@ -43,28 +61,28 @@ const DETAILS_QUERY = `query Details($lemma: String!, $source: String!) {
       hyphenation
       pronunciation
       subForms {
-        __typename
-        ... on FormInfo { linguistics description paradigms { form lang hyphenation pronunciation preferred } }
-        ... on Synonym { form lang meaning }
-        ... on Variant { form lang }
+        ${SUBFORM_SELECTION}
       }
     }
     translations { form lang pos }
     senses {
+      ${includeSenseSubForms ? `subForms {\n        ${SUBFORM_SELECTION}\n      }` : ""}
       definition {
         def {
           __typename
-          ... on Gloss { gloss { text { __typename ... on T { textT } ... on L { link { lemma } } } } }
+          ... on Gloss { gloss { text { ${TEXT_SELECTION} } } }
+          ... on FormattedText { text { ${TEXT_SELECTION} } }
         }
       }
       translations {
         __typename
         ... on Lemma { form lang pos }
-        ... on TextTranslated { lang text { text { __typename ... on T { textT } } } }
+        ... on TextTranslated { lang text { text { ${TEXT_SELECTION} } } }
       }
     }
   }
 }`;
+}
 
 interface GraphQLError {
   message: string;
@@ -98,12 +116,15 @@ type SubForm =
       paradigms?: Paradigm[] | null;
     }
   | { __typename: "Synonym"; form: string }
-  | { __typename: "Variant"; form: string };
+  | { __typename: "Variant"; form: string }
+  | { __typename: "Dutchism"; form: string };
 
 interface FormattedTextElement {
   __typename?: string;
   textT?: string;
   link?: { lemma?: string | null } | null;
+  textQ?: FormattedTextElement[] | null;
+  textI?: FormattedTextElement[] | null;
 }
 
 interface FormattedText {
@@ -114,12 +135,16 @@ type SenseTranslation =
   | { __typename: "Lemma"; form: string; lang: string }
   | { __typename: "TextTranslated"; lang: string; text?: FormattedText | null };
 
+// DefContent is a union of Gloss (which wraps a FormattedText) and FormattedText
+// itself, so a definition may carry its text under `gloss.text` or directly `text`.
 interface GlossaryContent {
   __typename: string;
   gloss?: FormattedText | null;
+  text?: FormattedTextElement[] | null;
 }
 
 interface Sense {
+  subForms?: SubForm[] | null;
   definition?: { def?: GlossaryContent[] | null } | null;
   translations?: SenseTranslation[] | null;
 }
@@ -143,22 +168,34 @@ interface DetailsData {
   details?: DetailsEntry[] | null;
 }
 
+function elementText(part: FormattedTextElement): string[] {
+  if (typeof part.textT === "string") return [part.textT];
+  if (part.link?.lemma) return [part.link.lemma];
+  if (part.textQ) return part.textQ.flatMap(elementText);
+  if (part.textI) return part.textI.flatMap(elementText);
+  return [];
+}
+
 function extractText(formatted: FormattedText | null | undefined): string {
   const parts = (formatted?.text ?? [])
-    .map((part) => {
-      if (typeof part.textT === "string") return part.textT;
-      if (part.link?.lemma) return part.link.lemma;
-      return "";
-    })
+    .flatMap(elementText)
     .filter((piece) => piece.length > 0);
   return parts.join(" ").replace(/\s+/g, " ").trim();
 }
 
-function mapDetail(entry: DetailsEntry): WordDetail {
-  const inflections = [];
+interface CollectedSubForms {
+  inflections: Inflection[];
+  synonyms: string[];
+  variants: string[];
+  dutchisms: string[];
+}
+
+function collectSubForms(subForms: SubForm[] | null | undefined): CollectedSubForms {
+  const inflections: Inflection[] = [];
   const synonyms: string[] = [];
   const variants: string[] = [];
-  for (const sub of entry.lemma.subForms ?? []) {
+  const dutchisms: string[] = [];
+  for (const sub of subForms ?? []) {
     if (sub.__typename === "FormInfo") {
       inflections.push({
         description: sub.description,
@@ -168,8 +205,22 @@ function mapDetail(entry: DetailsEntry): WordDetail {
       synonyms.push(sub.form);
     } else if (sub.__typename === "Variant") {
       variants.push(sub.form);
+    } else if (sub.__typename === "Dutchism") {
+      dutchisms.push(sub.form);
     }
   }
+  return { inflections, synonyms, variants, dutchisms };
+}
+
+function mapDetail(entry: DetailsEntry): WordDetail {
+  const lemmaSubs = collectSubForms(entry.lemma.subForms);
+  const senseSubs = collectSubForms(
+    (entry.senses ?? []).flatMap((sense) => sense.subForms ?? []),
+  );
+  const inflections = [...lemmaSubs.inflections, ...senseSubs.inflections];
+  const synonyms = [...lemmaSubs.synonyms, ...senseSubs.synonyms];
+  const variants = [...lemmaSubs.variants, ...senseSubs.variants];
+  const dutchisms = [...lemmaSubs.dutchisms, ...senseSubs.dutchisms];
 
   const translations: Translation[] = [];
   const seen = new Set<string>();
@@ -191,7 +242,7 @@ function mapDetail(entry: DetailsEntry): WordDetail {
   const definitions: string[] = [];
   for (const sense of entry.senses ?? []) {
     for (const def of sense.definition?.def ?? []) {
-      const text = extractText(def.gloss);
+      const text = extractText(def.gloss ?? def);
       if (text) definitions.push(text);
     }
   }
@@ -205,6 +256,7 @@ function mapDetail(entry: DetailsEntry): WordDetail {
     inflections,
     synonyms,
     variants,
+    dutchisms,
     translations,
     definitions,
   };
@@ -341,6 +393,7 @@ export class HttpGateway implements FryskerGateway {
   private readonly config: Config;
   private readonly fetchFn: typeof fetch;
   private readonly chunkChars: number;
+  private senseSubFormsSupport: boolean | undefined;
 
   constructor(options: HttpGatewayOptions = {}) {
     this.config = options.config ?? loadConfig();
@@ -353,10 +406,16 @@ export class HttpGateway implements FryskerGateway {
     variables: Record<string, unknown>,
   ): Promise<T> {
     const body = JSON.stringify({ query, variables });
+    const headers: Record<string, string> = {
+      "content-type": "application/json",
+    };
+    if (this.config.graphqlAuth) {
+      headers.authorization = this.config.graphqlAuth;
+    }
     const raw = await postWithRetry(
       {
         url: this.config.graphqlUrl,
-        headers: { "content-type": "application/json" },
+        headers,
         body,
       },
       { timeoutMs: this.config.timeoutMs, fetchFn: this.fetchFn },
@@ -367,6 +426,26 @@ export class HttpGateway implements FryskerGateway {
     }
     if (!parsed.data) throw new Error("Empty response from language API.");
     return parsed.data;
+  }
+
+  /**
+   * v8 has no Sense.subForms; v9 does. Probe the schema once so the details query
+   * stays valid against whichever endpoint is configured.
+   */
+  private async supportsSenseSubForms(): Promise<boolean> {
+    if (this.senseSubFormsSupport === undefined) {
+      try {
+        const data = await this.gql<{
+          __type?: { fields?: Array<{ name: string }> | null } | null;
+        }>(`query Capabilities { __type(name: "Sense") { fields { name } } }`, {});
+        this.senseSubFormsSupport = (data.__type?.fields ?? []).some(
+          (field) => field.name === "subForms",
+        );
+      } catch {
+        this.senseSubFormsSupport = false;
+      }
+    }
+    return this.senseSubFormsSupport;
   }
 
   private async translateChunk(
@@ -425,6 +504,7 @@ export class HttpGateway implements FryskerGateway {
     });
 
     const details: WordDetail[] = [];
+    const detailsQuery = buildDetailsQuery(await this.supportsSenseSubForms());
     const maxAttempts = Math.max(max * 3, max);
     let attempts = 0;
     for (const candidate of ordered) {
@@ -432,7 +512,7 @@ export class HttpGateway implements FryskerGateway {
       if (attempts >= maxAttempts) break;
       attempts++;
       try {
-        const result = await this.gql<DetailsData>(DETAILS_QUERY, {
+        const result = await this.gql<DetailsData>(detailsQuery, {
           lemma: candidate.form,
           source: detailSource,
         });

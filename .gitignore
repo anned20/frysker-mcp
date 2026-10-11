@@ -1,6 +1,5 @@
 node_modules/
 dist/
-dist-test/
 *.tgz
 
 # Browser exploration output captured while reverse-engineering the APIs.

@@ -48,6 +48,9 @@ export function renderSearch(result: SearchResult): string {
       if (detail.variants.length > 0) {
         lines.push(`   variants: ${detail.variants.join(", ")}`);
       }
+      if (detail.dutchisms.length > 0) {
+        lines.push(`   dutchisms: ${detail.dutchisms.join(", ")}`);
+      }
       if (detail.definitions.length > 0) {
         lines.push("   definitions:");
         for (const definition of detail.definitions) {

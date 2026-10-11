@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import { test } from "node:test";
+import { expect, test } from "vitest";
 
 import { chunkParagraphs } from "../src/httpGateway.js";
 import { callTool, connect, isError, textOf } from "./helpers.js";
@@ -8,7 +7,7 @@ test("answers MCP initialize and lists the three tools", async () => {
   const client = await connect();
   const { tools } = await client.listTools();
   const names = tools.map((tool) => tool.name).sort();
-  assert.deepEqual(names, ["check_text", "search_word", "translate"]);
+  expect(names).toEqual(["check_text", "search_word", "translate"]);
 });
 
 test("translates a Dutch paragraph into Frisian", async () => {
@@ -17,8 +16,8 @@ test("translates a Dutch paragraph into Frisian", async () => {
     text: "Het huis staat in de tuin.",
     from: "nl",
   });
-  assert.equal(isError(result), false);
-  assert.equal(textOf(result), "It hûs stiet yn de tún.");
+  expect(isError(result)).toBe(false);
+  expect(textOf(result)).toBe("It hûs stiet yn de tún.");
 });
 
 test("translates a Frisian sentence into Dutch", async () => {
@@ -27,8 +26,8 @@ test("translates a Frisian sentence into Dutch", async () => {
     text: "It hus stiet yn de tun.",
     from: "fry",
   });
-  assert.equal(isError(result), false);
-  assert.equal(textOf(result), "Het huis staat in de tuin.");
+  expect(isError(result)).toBe(false);
+  expect(textOf(result)).toBe("Het huis staat in de tuin.");
 });
 
 test("rejects an explicit English source language", async () => {
@@ -37,8 +36,8 @@ test("rejects an explicit English source language", async () => {
     text: "The house is big.",
     from: "en",
   });
-  assert.equal(isError(result), true);
-  assert.match(textOf(result), /Unsupported source language/i);
+  expect(isError(result)).toBe(true);
+  expect(textOf(result)).toMatch(/Unsupported source language/i);
 });
 
 test("rejects English text that the API echoes back unchanged", async () => {
@@ -47,8 +46,8 @@ test("rejects English text that the API echoes back unchanged", async () => {
     text: "The house is big.",
     from: "nl",
   });
-  assert.equal(isError(result), true);
-  assert.match(textOf(result), /unchanged/i);
+  expect(isError(result)).toBe(true);
+  expect(textOf(result)).toMatch(/unchanged/i);
 });
 
 test("chunks long text on sentence boundaries, preserving paragraphs", () => {
@@ -57,18 +56,17 @@ test("chunks long text on sentence boundaries, preserving paragraphs", () => {
   const text = `${paragraph}\n\n${paragraph}`;
 
   const groups = chunkParagraphs(text, 500);
-  assert.equal(groups.length, 2, "one chunk-group per paragraph");
+  expect(groups.length, "one chunk-group per paragraph").toBe(2);
   for (const group of groups) {
-    assert.ok(group.length >= 2, "long paragraph splits into several chunks");
+    expect(group.length, "long paragraph splits into several chunks").toBeGreaterThanOrEqual(2);
     for (const chunk of group) {
-      assert.ok(chunk.length <= 500, `chunk too long: ${chunk.length}`);
-      assert.match(chunk, /[.!?]$/, "chunks break on sentence boundaries");
+      expect(chunk.length, `chunk too long: ${chunk.length}`).toBeLessThanOrEqual(500);
+      expect(chunk).toMatch(/[.!?]$/);
     }
   }
 
   const rebuilt = groups.map((group) => group.join(" ")).join("\n\n");
-  assert.equal(
-    rebuilt,
+  expect(rebuilt).toBe(
     text
       .split(/\n{2,}/)
       .map((part) => part.trim())

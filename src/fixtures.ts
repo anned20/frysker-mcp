@@ -58,6 +58,7 @@ export const SEARCH_RESULTS: Record<string, SearchResult> = {
         ],
         synonyms: ["behuzing", "huzing", "wenning", "wente"],
         variants: ["hús"],
+        dutchisms: [],
         translations: [
           { form: "huis", lang: "nl" },
           { form: "rent", lang: "en" },
@@ -99,6 +100,7 @@ export const SEARCH_RESULTS: Record<string, SearchResult> = {
         inflections: [{ description: "plural", forms: ["huzen", "hûzen"] }],
         synonyms: [],
         variants: [],
+        dutchisms: [],
         translations: [
           { form: "huis", lang: "nl" },
           { form: "house", lang: "en" },
@@ -139,6 +141,7 @@ export const SEARCH_RESULTS: Record<string, SearchResult> = {
         inflections: [],
         synonyms: [],
         variants: [],
+        dutchisms: [],
         translations: [
           { form: "hûs", lang: "fry" },
           { form: "rent", lang: "en" },

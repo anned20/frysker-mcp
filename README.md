@@ -72,6 +72,7 @@ FRYSKER_MOCK=1 node dist/index.js
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `FRYSKER_GRAPHQL_URL` | `https://frisian.eu/languageapi_v8` | GraphQL language API endpoint. |
+| `FRYSKER_GRAPHQL_AUTH` | unset | Optional `Authorization` header for the GraphQL API. |
 | `FRYSKER_CHECKER_URL` | `https://web-api.taalweb.frl/kt/analyse` | Klinkende Taal XML checker endpoint. |
 | `FRYSKER_CHECKER_AUTH` | public `Basic` token | Checker credential. |
 | `FRYSKER_TIMEOUT_MS` | `20000` | Per-request timeout. |
@@ -128,7 +129,8 @@ To run from a local checkout instead, point `command` at the built entry point:
 ```sh
 npm run build       # compile to dist/
 npm run typecheck   # typecheck sources and tests
-npm test            # run the test suite (node --test, offline via MockGateway)
+npm test            # run the test suite (Vitest, offline via MockGateway)
+npm run test:watch  # re-run tests on change
 ```
 
 Tests assert external behaviour only, injected with the mock gateway, and never
@@ -140,3 +142,10 @@ Both backends are undocumented and reverse-engineered from the site's network
 traffic, so they may change without notice. The env-overridable endpoints and the
 isolated gateway contain that risk. The checker credential is a public token
 embedded in Frysker's client JavaScript, not a user secret.
+
+The published schema docs describe the v9 schema, but the public, unauthenticated
+deployment (the one Frysker's own web client calls) is still v8. The v9 endpoint
+requires an `Authorization` header, so it is reachable only by setting
+`FRYSKER_GRAPHQL_AUTH` (and `FRYSKER_GRAPHQL_URL`). The server probes the schema
+once and includes v9-only sense-level subforms only when the configured endpoint
+supports them, so it stays valid against either version.
