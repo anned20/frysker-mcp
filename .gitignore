@@ -8,6 +8,3 @@ dist-test/
 
 # Scratch notes and reverse-engineering output
 .scratch/
-check-response.xml
-search-response.json
-translate-response.json

@@ -8,7 +8,7 @@ import {
 } from "../src/httpGateway.js";
 
 const capturedXml = readFileSync(
-  new URL("../../check-response.xml", import.meta.url),
+  new URL("../../fixtures/check-response.xml", import.meta.url),
   "utf8",
 );
 
